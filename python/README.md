@@ -22,35 +22,18 @@ pip install .
 
 ```python
 import numpy as np
-from simple_ans import encode, decode, choose_symbol_counts
+from simple_ans import ans_encode, ans_decode
 
-# Create a signal to encode
+# Create a signal to encode (uint32 array)
 signal = np.array([0, 1, 2, 1, 0], dtype=np.uint32)
 
-# Define symbol frequencies
-symbol_counts = np.array([2, 2, 1], dtype=np.uint32)  # For symbols 0,1,2
-
-# Encode
-encoded = encode(signal, symbol_counts)
+# Encode (automatically determines optimal symbol counts)
+encoded = ans_encode(signal)
 
 # Decode
-decoded = decode(encoded.state, encoded.bits, encoded.num_bits,
-                symbol_counts, len(signal))
+decoded = ans_decode(encoded)
 
-# Helper function to convert probabilities to counts
-proportions = [0.5, 0.3, 0.2]
-L = 1024  # Should be power of 2
-counts = choose_symbol_counts(proportions, L)
+# Verify
+assert np.all(decoded == signal)
 ```
 
-## Testing
-
-Run the tests:
-
-```bash
-python test_simple_ans.py
-```
-
-## License
-
-MIT License

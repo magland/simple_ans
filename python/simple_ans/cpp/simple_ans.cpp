@@ -100,56 +100,42 @@ std::vector<int32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstrea
         throw std::invalid_argument("Initial state is invalid");
     }
 
-    // Pre-compute cumulative sums for efficiency
+    // Pre-compute lookup table for symbol finding
+    std::vector<uint8_t> symbol_lookup(L);
     std::vector<uint32_t> cumsum(symbol_counts.size() + 1, 0);
+
+    // Build cumulative sums and lookup table
     for (size_t i = 0; i < symbol_counts.size(); ++i) {
         cumsum[i + 1] = cumsum[i] + symbol_counts[i];
+        for (uint32_t j = cumsum[i]; j < cumsum[i + 1]; ++j) {
+            symbol_lookup[j] = static_cast<uint8_t>(i);
+        }
     }
 
+    // Prepare bit reading
     std::vector<int32_t> signal(n);
     int64_t bit_pos = num_bits - 1;
+    const uint32_t L_mask = L - 1;  // For fast modulo since L is power of 2
 
-    // Decode symbols in reverse order
+    // Decode symbols in reverse order with optimized operations
     for (size_t i = 0; i < n; ++i) {
-        // Find symbol s where state % L falls within its cumulative range using binary search
-        uint32_t remainder = state % L;
-        size_t left = 0;
-        size_t right = symbol_counts.size();
-        size_t s;
-        while (left < right) {
-            size_t mid = (left + right) / 2;
-            if (cumsum[mid + 1] <= remainder) {
-                left = mid + 1;
-            } else {
-                right = mid;
-            }
-        }
-        s = left;
+        // Find symbol using lookup table instead of binary search
+        uint32_t remainder = state & L_mask;  // Fast modulo for power of 2
+        uint8_t s = symbol_lookup[remainder];
 
         // Calculate normalized state
         uint32_t state_normalized = symbol_counts[s] + state - L - cumsum[s];
-        const uint32_t L_s = symbol_counts[s];
-
-        if (state_normalized < L_s || state_normalized >= 2 * L_s) {
-            throw std::runtime_error("Invalid normalized state during decoding");
-        }
 
         state = state_normalized;
 
-        // Renormalize state using packed bitstream
         while (state < L) {
             if (bit_pos < 0) {
                 throw std::runtime_error("Bitstream exhausted");
             }
-            size_t byte_idx = bit_pos / 8;
-            size_t bit_idx = bit_pos % 8;
-            uint8_t bit = (bitstream[byte_idx] >> bit_idx) & 1;
-            state = (state << 1) | bit;
-            bit_pos--;
-        }
-
-        if (state >= 2 * L) {
-            throw std::runtime_error("Invalid state during decoding");
+            uint32_t byte_idx = bit_pos >> 3;  // Divide by 8
+            uint32_t bit_idx = bit_pos & 7;    // Modulo 8
+            state = (state << 1) | ((bitstream[byte_idx] >> bit_idx) & 1);
+            --bit_pos;
         }
 
         signal[n - 1 - i] = symbol_values[s];

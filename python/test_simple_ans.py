@@ -21,8 +21,9 @@ def test_encode_decode():
     encoded = ans_encode(signal, symbol_counts, symbol_values)
     assert isinstance(encoded, EncodedSignal), "Result should be EncodedSignal object"
     assert isinstance(
-        encoded.bitstream, bytes
-    ), "Encoded bitstream should be bytes object"
+        encoded.bitstream, list
+    ), "Encoded bitstream should be a list of uint32 values"
+    assert all(isinstance(x, int) for x in encoded.bitstream), "All bitstream elements should be integers"
 
     # Decode
     decoded = ans_decode(encoded)

@@ -40,8 +40,8 @@ EncodedData encode(const std::vector<int32_t>& signal, const std::vector<uint32_
 
     // Initialize state and packed bitstream
     uint32_t state = L;
-    std::vector<uint8_t> bitstream;
-    bitstream.reserve(signal.size() / 4); // Reserve conservative space
+    std::vector<uint32_t> bitstream;
+    bitstream.reserve(signal.size() / 16); // Reserve conservative space (32-bit words)
     size_t num_bits = 0;
 
     // Encode each symbol
@@ -58,13 +58,13 @@ EncodedData encode(const std::vector<int32_t>& signal, const std::vector<uint32_
         // we need state_normalized to be in the range [L_s, 2*L_s)
         while (state_normalized >= 2 * L_s) {
             // Add bit to packed format
-            size_t byte_idx = num_bits / 8;
-            size_t bit_idx = num_bits % 8;
-            if (byte_idx >= bitstream.size()) {
+            size_t word_idx = num_bits / 32;
+            size_t bit_idx = num_bits % 32;
+            if (word_idx >= bitstream.size()) {
                 bitstream.push_back(0);
             }
             if (state_normalized & 1) {
-                bitstream[byte_idx] |= (1 << bit_idx);
+                bitstream[word_idx] |= (1u << bit_idx);
             }
             num_bits++;
             state_normalized >>= 1;
@@ -81,7 +81,7 @@ EncodedData encode(const std::vector<int32_t>& signal, const std::vector<uint32_
     return {state, std::move(bitstream), num_bits};
 }
 
-std::vector<int32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstream, size_t num_bits,
+std::vector<int32_t> decode(uint32_t state, const std::vector<uint32_t>& bitstream, size_t num_bits,
                             const std::vector<uint32_t>& symbol_counts, const std::vector<int32_t>& symbol_values, size_t n) {
     if (symbol_counts.size() != symbol_values.size()) {
         throw std::invalid_argument("symbol_counts and symbol_values must have the same length");
@@ -132,9 +132,9 @@ std::vector<int32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstrea
             if (bit_pos < 0) {
                 throw std::runtime_error("Bitstream exhausted");
             }
-            uint32_t byte_idx = bit_pos >> 3;  // Divide by 8
-            uint32_t bit_idx = bit_pos & 7;    // Modulo 8
-            state = (state << 1) | ((bitstream[byte_idx] >> bit_idx) & 1);
+            uint32_t word_idx = bit_pos >> 5;  // Divide by 32
+            uint32_t bit_idx = bit_pos & 31;   // Modulo 32
+            state = (state << 1) | ((bitstream[word_idx] >> bit_idx) & 1);
             --bit_pos;
         }
 

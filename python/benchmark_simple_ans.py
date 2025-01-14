@@ -26,7 +26,7 @@ assert np.all(signal_decoded == signal)
 print("Decoded signal matches original signal")
 
 compressed_size_bits = (
-    len(encoded.bitstream) * 8 + 32
+    len(encoded.bitstream) * 32 + 32
 )  # actual bits used + 32 bits for state
 compression_ratio = (len(signal) * 16) / compressed_size_bits
 print(f"Ideal compression ratio: {ideal_compression_ratio}")

@@ -8,8 +8,8 @@ namespace simple_ans {
 
 struct EncodedData {
     uint32_t state;
-    std::vector<uint8_t> bitstream; // Each byte contains 8 bits, with padding in last byte if needed
-    size_t num_bits; // Actual number of bits used (may be less than bitstream.size() * 8)
+    std::vector<uint32_t> bitstream; // Each uint32_t contains 32 bits, with padding in last word if needed
+    size_t num_bits; // Actual number of bits used (may be less than bitstream.size() * 32)
 };
 
 // Performs streaming Asymmetric Numeral Systems (ANS) encoding of a signal
@@ -18,7 +18,7 @@ EncodedData encode(const std::vector<int32_t>& signal, const std::vector<uint32_
 
 // Performs streaming Asymmetric Numeral Systems (ANS) decoding of an encoded signal
 // symbol_values must have same length as symbol_counts and specifies the actual values that correspond to each symbol index
-std::vector<int32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstream, size_t num_bits,
+std::vector<int32_t> decode(uint32_t state, const std::vector<uint32_t>& bitstream, size_t num_bits,
                             const std::vector<uint32_t>& symbol_counts, const std::vector<int32_t>& symbol_values, size_t n);
 
 // Helper function to verify if a number is a power of 2

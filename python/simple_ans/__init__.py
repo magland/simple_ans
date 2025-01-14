@@ -11,14 +11,14 @@ class EncodedSignal:
 
     Attributes:
         state: Integer representing the final encoder state
-        bitstream: Bytes object containing the encoded bitstream
+        bitstream: List of 32-bit integers containing the encoded bitstream
         num_bits: Number of bits used in the encoding
         symbol_counts: Integer list of symbol counts
         signal_length: Length of the original signal
     """
 
     state: int
-    bitstream: bytes
+    bitstream: list
     num_bits: int
     symbol_counts: list
     symbol_values: list
@@ -97,7 +97,7 @@ def ans_encode(signal, symbol_counts=None, symbol_values=None):
     encoded = _encode(signal, symbol_counts, symbol_values)
     return EncodedSignal(
         state=encoded.state,
-        bitstream=bytes(encoded.bitstream),
+        bitstream=list(encoded.bitstream),  # Already uint32 array from C++
         num_bits=encoded.num_bits,
         symbol_counts=symbol_counts,
         symbol_values=symbol_values,
@@ -114,8 +114,8 @@ def ans_decode(encoded):
     Returns:
         list: Decoded signal as a list of integers
     """
-    # Convert bytes back to list of uint8 for the C++ interface
-    bitstream_list = list(encoded.bitstream)
+    # bitstream is already a list of uint32
+    bitstream_list = encoded.bitstream
     return _decode(
         encoded.state,
         bitstream_list,

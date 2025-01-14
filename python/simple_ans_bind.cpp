@@ -14,11 +14,11 @@ PYBIND11_MODULE(_simple_ans, m) {
         .def_readwrite("num_bits", &simple_ans::EncodedData::num_bits);
 
     m.def("encode", &simple_ans::encode, "Encode signal using ANS",
-          py::arg("signal"), py::arg("symbol_counts"));
+          py::arg("signal"), py::arg("symbol_counts"), py::arg("symbol_values"));
 
     m.def("decode", &simple_ans::decode, "Decode ANS-encoded signal",
           py::arg("state"), py::arg("bitstream"), py::arg("num_bits"),
-          py::arg("symbol_counts"), py::arg("n"));
+          py::arg("symbol_counts"), py::arg("symbol_values"), py::arg("n"));
 
     m.def("choose_symbol_counts", &simple_ans::choose_symbol_counts,
           "Convert real-valued proportions into integer counts summing to L",

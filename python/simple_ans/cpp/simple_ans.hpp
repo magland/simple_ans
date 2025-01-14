@@ -13,11 +13,13 @@ struct EncodedData {
 };
 
 // Performs streaming Asymmetric Numeral Systems (ANS) encoding of a signal
-EncodedData encode(const std::vector<uint32_t>& signal, const std::vector<uint32_t>& symbol_counts);
+// symbol_values must have same length as symbol_counts and specifies the actual values that correspond to each symbol index
+EncodedData encode(const std::vector<int32_t>& signal, const std::vector<uint32_t>& symbol_counts, const std::vector<int32_t>& symbol_values);
 
 // Performs streaming Asymmetric Numeral Systems (ANS) decoding of an encoded signal
-std::vector<uint32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstream, size_t num_bits,
-                            const std::vector<uint32_t>& symbol_counts, size_t n);
+// symbol_values must have same length as symbol_counts and specifies the actual values that correspond to each symbol index
+std::vector<int32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstream, size_t num_bits,
+                            const std::vector<uint32_t>& symbol_counts, const std::vector<int32_t>& symbol_values, size_t n);
 
 // Helper function to verify if a number is a power of 2
 inline bool is_power_of_2(uint32_t x) {

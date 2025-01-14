@@ -1,11 +1,21 @@
 #include "simple_ans.hpp"
 #include <iostream>
+#include <unordered_map>
 
 // From: https://graphallthethings.com/posts/streaming-ans-explained/
 
 namespace simple_ans {
 
-EncodedData encode(const std::vector<uint32_t>& signal, const std::vector<uint32_t>& symbol_counts) {
+EncodedData encode(const std::vector<int32_t>& signal, const std::vector<uint32_t>& symbol_counts, const std::vector<int32_t>& symbol_values) {
+    if (symbol_counts.size() != symbol_values.size()) {
+        throw std::invalid_argument("symbol_counts and symbol_values must have the same length");
+    }
+
+    // Create mapping from values to indices
+    std::unordered_map<int32_t, size_t> symbol_index_for_value;
+    for (size_t i = 0; i < symbol_values.size(); ++i) {
+        symbol_index_for_value[symbol_values[i]] = i;
+    }
     // Calculate L (sum of symbol counts) and verify it's a power of 2
     uint32_t L = 0;
     for (const auto& count : symbol_counts) {
@@ -36,7 +46,11 @@ EncodedData encode(const std::vector<uint32_t>& signal, const std::vector<uint32
 
     // Encode each symbol
     for (size_t i = 0; i < signal.size(); ++i) {
-        const auto& s = signal[i];
+        auto it = symbol_index_for_value.find(signal[i]);
+        if (it == symbol_index_for_value.end()) {
+            throw std::invalid_argument("Signal value not found in symbol_values");
+        }
+        const auto s = it->second;
         uint32_t state_normalized = state;
         const uint32_t L_s = symbol_counts[s];
 
@@ -67,8 +81,11 @@ EncodedData encode(const std::vector<uint32_t>& signal, const std::vector<uint32
     return {state, std::move(bitstream), num_bits};
 }
 
-std::vector<uint32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstream, size_t num_bits,
-                            const std::vector<uint32_t>& symbol_counts, size_t n) {
+std::vector<int32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstream, size_t num_bits,
+                            const std::vector<uint32_t>& symbol_counts, const std::vector<int32_t>& symbol_values, size_t n) {
+    if (symbol_counts.size() != symbol_values.size()) {
+        throw std::invalid_argument("symbol_counts and symbol_values must have the same length");
+    }
     // Calculate L and verify it's a power of 2
     uint32_t L = 0;
     for (const auto& count : symbol_counts) {
@@ -89,7 +106,7 @@ std::vector<uint32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstre
         cumsum[i + 1] = cumsum[i] + symbol_counts[i];
     }
 
-    std::vector<uint32_t> signal(n);
+    std::vector<int32_t> signal(n);
     int64_t bit_pos = num_bits - 1;
 
     // Decode symbols in reverse order
@@ -135,7 +152,7 @@ std::vector<uint32_t> decode(uint32_t state, const std::vector<uint8_t>& bitstre
             throw std::runtime_error("Invalid state during decoding");
         }
 
-        signal[n - 1 - i] = s;
+        signal[n - 1 - i] = symbol_values[s];
     }
 
     return signal;

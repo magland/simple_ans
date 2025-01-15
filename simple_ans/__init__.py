@@ -74,7 +74,7 @@ class EncodedSignal:
 def determine_symbol_counts_and_values(
     signal: np.ndarray | list,
     index_length: int | None = None,
-    dtype: np.dtype = np.dtype(np.int32),
+    dtype: np.dtype | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Determine symbol counts and unique values from input data.
 
@@ -95,6 +95,9 @@ def determine_symbol_counts_and_values(
     if not isinstance(signal, np.ndarray):
         signal = np.array(signal, dtype=dtype)
 
+    if dtype is None:
+        dtype = signal.dtype
+
     if dtype not in [np.int32, np.int16, np.uint32, np.uint16]:
         raise ValueError("dtype must be np.int32, np.int16, np.uint32, or np.uint16")
     assert signal.dtype == dtype
@@ -109,8 +112,8 @@ def determine_symbol_counts_and_values(
         return n > 0 and (n & (n - 1)) == 0
 
     if index_length is None:
-        # Start at 2^10 and increase until we have enough space for all symbols
-        index_length = 2**10
+        # Start at 2^16 and increase until we have enough space for all symbols
+        index_length = 2**16
         while index_length < num_symbols:
             index_length *= 2
     elif not isinstance(index_length, int) or index_length <= 0:

@@ -90,13 +90,6 @@ EncodedData encode_t(const T* signal,
                      const T* symbol_values,
                      size_t num_symbols)
 {
-    // Create mapping from values to indices
-    std::unordered_map<T, size_t> symbol_index_for_value;
-    for (size_t i = 0; i < num_symbols; ++i)
-    {
-        symbol_index_for_value[symbol_values[i]] = i;
-    }
-
     // Calculate L (sum of symbol counts) and verify it's a power of 2
     uint32_t L = 0;
     for (size_t i = 0; i < num_symbols; ++i)
@@ -123,10 +116,20 @@ EncodedData encode_t(const T* signal,
         cumsum[i + 1] = cumsum[i] + symbol_counts[i];
     }
 
+    // Create mapping from values to indices
+    std::unordered_map<T, size_t> symbol_index_for_value;
+    for (size_t i = 0; i < num_symbols; ++i)
+    {
+        symbol_index_for_value[symbol_values[i]] = i;
+    }
+
     // Initialize state and packed bitstream
     uint32_t state = L;
-    std::vector<uint64_t> bitstream;
-    bitstream.reserve(signal_size / 32);  // Reserve conservative space (64-bit words)
+    // Preallocate bitstream - in worst case, each symbol needs log2(2L) bits
+    // Convert to 64-bit words by dividing by 64 and rounding up
+    size_t max_bits = signal_size * (32 - __builtin_clz(2 * L - 1));
+    size_t num_words = (max_bits + 63) / 64;
+    std::vector<uint64_t> bitstream(num_words, 0);
     size_t num_bits = 0;
 
     // Encode each symbol
@@ -146,29 +149,20 @@ EncodedData encode_t(const T* signal,
         while (state_normalized >= 2 * L_s)
         {
             // Add bit to packed format
-            size_t word_idx = num_bits / 64;
-            size_t bit_idx = num_bits % 64;
-            if (word_idx >= bitstream.size())
-            {
-                bitstream.push_back(0);
-            }
-            if (state_normalized & 1)
-            {
-                bitstream[word_idx] |= (1ull << bit_idx);
-            }
+            size_t word_idx = num_bits >> 6;  // Divide by 64
+            size_t bit_idx = num_bits & 63;   // Modulo 64
+            bitstream[word_idx] |= static_cast<uint64_t>(state_normalized & 1) << bit_idx;
             num_bits++;
             state_normalized >>= 1;
         }
 
         // Update state
         state = L + cumsum[s] + state_normalized - L_s;
-
-        if (state < L || state >= 2 * L)
-        {
-            throw std::runtime_error("Invalid state during encoding");
-        }
     }
 
+    // Truncate bitstream to actual size used
+    size_t final_words = (num_bits + 63) / 64;
+    bitstream.resize(final_words);
     return {state, std::move(bitstream), num_bits};
 }
 
@@ -217,28 +211,24 @@ void decode_t(T* output,
     int64_t bit_pos = num_bits - 1;
     const uint32_t L_mask = L - 1;  // For fast modulo since L is power of 2
 
-    // Decode symbols in reverse order with optimized operations
+    // Decode symbols in reverse order
     for (size_t i = 0; i < n; ++i)
     {
         // Find symbol using lookup table instead of binary search
         uint32_t remainder = state & L_mask;  // Fast modulo for power of 2
         uint32_t s = symbol_lookup[remainder];
 
-        // Calculate normalized state
-        uint32_t state_normalized = symbol_counts[s] + state - L - cumsum[s];
+        // Calculate normalized state which will be in the range [L_s, 2*L_s)
+        uint32_t L_s = symbol_counts[s];
+        state = L_s + state - L - cumsum[s];
 
-        state = state_normalized;
-
+        // read from the bit stream and get us back to the range [L, 2L)
         while (state < L)
         {
-            if (bit_pos < 0)
-            {
-                throw std::runtime_error("Bitstream exhausted");
-            }
             uint32_t word_idx = bit_pos >> 6;  // Divide by 64
             uint32_t bit_idx = bit_pos & 63;   // Modulo 64
             state = (state << 1) | ((bitstream[word_idx] >> bit_idx) & 1);
-            --bit_pos;
+            bit_pos--;
         }
 
         output[n - 1 - i] = symbol_values[s];

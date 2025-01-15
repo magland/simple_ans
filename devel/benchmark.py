@@ -2,19 +2,16 @@ import time
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-from simple_ans import ans_encode, ans_decode
+from simple_ans import ans_encode, ans_decode, determine_symbol_counts_and_values
 
 # Generate random test data from normal distribution
-n = 10_000_000
-# Generate signal with normal distribution, ensuring positive values
-signal = np.round(np.random.normal(0, 1, n) * 1).astype(np.int16)
-
-signal_info = {"size": n, "bytes": len(signal) * 4}  # int32 = 4 bytes
+n = 5_000_000
+signal = np.round(np.random.normal(0, 1, n) * 4).astype(np.int32)
 
 # Calculate ideal compression ratio
 vals, counts = np.unique(signal, return_counts=True)
 probs = counts / len(signal)
-ideal_compression_ratio = 16 / -np.sum(probs * np.log2(probs))
+ideal_compression_ratio = signal.itemsize * 8 / -np.sum(probs * np.log2(probs))
 print(f"Ideal compression ratio: {ideal_compression_ratio}")
 
 # List to store all results
@@ -22,7 +19,12 @@ results = []
 
 # Test simple_ans
 timer = time.time()
-encoded = ans_encode(signal=signal)  # Using auto-determined symbol counts
+auto_counts, auto_values = determine_symbol_counts_and_values(
+    signal, index_length=2**16
+)
+encoded = ans_encode(
+    signal=signal, symbol_counts=auto_counts, symbol_values=auto_values
+)  # Using auto-determined symbol counts
 elapsed_encode = time.time() - timer
 
 timer = time.time()
@@ -82,7 +84,9 @@ for level in zlib_levels:
     zlib_compression_ratio = signal_bytes / len(buf_compressed)
 
     timer = time.time()
-    signal_decompressed = np.frombuffer(zlib.decompress(buf_compressed), dtype=np.int32)
+    signal_decompressed = np.frombuffer(
+        zlib.decompress(buf_compressed), dtype=signal.dtype
+    )
     elapsed_zlib_decode = time.time() - timer
 
     results.append(
@@ -124,7 +128,7 @@ for level in zstd_levels:
 
     dctx = zstd.ZstdDecompressor()
     timer = time.time()
-    signal_decompressed = np.frombuffer(dctx.decompress(compressed), dtype=np.int32)
+    signal_decompressed = np.frombuffer(dctx.decompress(compressed), dtype=signal.dtype)
     elapsed_zstd_decode = time.time() - timer
 
     results.append(
@@ -162,7 +166,7 @@ elapsed_lzma = time.time() - timer
 lzma_compression_ratio = signal_bytes / len(compressed)
 
 timer = time.time()
-signal_decompressed = np.frombuffer(lzma.decompress(compressed), dtype=np.int32)
+signal_decompressed = np.frombuffer(lzma.decompress(compressed), dtype=signal.dtype)
 elapsed_lzma_decode = time.time() - timer
 
 results.append(
@@ -190,7 +194,6 @@ print(
 
 # Save results to JSON
 output = {
-    "signal_info": signal_info,
     "ideal_compression_ratio": float(ideal_compression_ratio),
     "results": results,
 }

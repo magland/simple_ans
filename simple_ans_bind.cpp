@@ -5,6 +5,87 @@
 
 namespace py = pybind11;
 
+// Template function to avoid code duplication in Python bindings
+template <typename T>
+void bind_ans_functions(py::module& m, const char* type_suffix)
+{
+    std::string encode_name = std::string("encode_") + type_suffix;
+    std::string decode_name = std::string("decode_") + type_suffix;
+
+    m.def(
+        encode_name.c_str(),
+        [](py::array_t<T> signal, py::array_t<uint32_t> symbol_counts, py::array_t<T> symbol_values)
+        {
+            py::buffer_info signal_buf = signal.request();
+            py::buffer_info counts_buf = symbol_counts.request();
+            py::buffer_info values_buf = symbol_values.request();
+
+            if (counts_buf.ndim != 1 || values_buf.ndim != 1)
+            {
+                throw std::runtime_error("symbol_counts and symbol_values must be 1-dimensional");
+            }
+            if (counts_buf.shape[0] != values_buf.shape[0])
+            {
+                throw std::runtime_error(
+                    "symbol_counts and symbol_values must have the same length");
+            }
+
+            return simple_ans::encode_t(static_cast<const T*>(signal_buf.ptr),
+                                        signal_buf.size,
+                                        static_cast<const uint32_t*>(counts_buf.ptr),
+                                        static_cast<const T*>(values_buf.ptr),
+                                        counts_buf.shape[0]);
+        },
+        "Encode signal using ANS",
+        py::arg("signal").noconvert(),
+        py::arg("symbol_counts").noconvert(),
+        py::arg("symbol_values").noconvert());
+
+    m.def(
+        decode_name.c_str(),
+        [](uint32_t state,
+           const std::vector<uint64_t>& bitstream,
+           size_t num_bits,
+           py::array_t<uint32_t> symbol_counts,
+           py::array_t<T> symbol_values,
+           size_t n)
+        {
+            py::buffer_info counts_buf = symbol_counts.request();
+            py::buffer_info values_buf = symbol_values.request();
+
+            if (counts_buf.ndim != 1 || values_buf.ndim != 1)
+            {
+                throw std::runtime_error("symbol_counts and symbol_values must be 1-dimensional");
+            }
+            if (counts_buf.shape[0] != values_buf.shape[0])
+            {
+                throw std::runtime_error(
+                    "symbol_counts and symbol_values must have the same length");
+            }
+
+            auto result = py::array_t<T>(n);
+            py::buffer_info result_buf = result.request();
+
+            simple_ans::decode_t(static_cast<T*>(result_buf.ptr),
+                                 n,
+                                 state,
+                                 bitstream.data(),
+                                 num_bits,
+                                 static_cast<const uint32_t*>(counts_buf.ptr),
+                                 static_cast<const T*>(values_buf.ptr),
+                                 counts_buf.shape[0]);
+
+            return result;
+        },
+        "Decode ANS-encoded signal",
+        py::arg("state"),
+        py::arg("bitstream"),
+        py::arg("num_bits"),
+        py::arg("symbol_counts").noconvert(),
+        py::arg("symbol_values").noconvert(),
+        py::arg("n"));
+}
+
 PYBIND11_MODULE(_simple_ans, m)
 {
     m.doc() = "Simple ANS (Asymmetric Numeral Systems) implementation";
@@ -15,6 +96,11 @@ PYBIND11_MODULE(_simple_ans, m)
         .def_readwrite("bitstream", &simple_ans::EncodedData::bitstream)
         .def_readwrite("num_bits", &simple_ans::EncodedData::num_bits);
 
+    // Bind both int32 and int16 versions
+    bind_ans_functions<int32_t>(m, "int32");
+    bind_ans_functions<int16_t>(m, "int16");
+
+    // Legacy int32_t versions without suffix for backward compatibility
     m.def(
         "encode",
         [](py::array_t<int32_t> signal,
@@ -113,21 +199,4 @@ PYBIND11_MODULE(_simple_ans, m)
         "Convert real-valued proportions into integer counts summing to L",
         py::arg("proportions").noconvert(),
         py::arg("L"));
-
-    m.def(
-        "add_one_test",
-        [](py::array_t<int32_t> input)
-        {
-            py::buffer_info buf = input.request();
-            auto result = py::array_t<int32_t>(buf.shape[0]);
-            py::buffer_info result_buf = result.request();
-
-            simple_ans::add_one_test(static_cast<int32_t*>(result_buf.ptr),
-                                     static_cast<const int32_t*>(buf.ptr),
-                                     buf.shape[0]);
-
-            return result;
-        },
-        "Test function that adds 1 to each element of an array - for benchmarking data transfer",
-        py::arg("input").noconvert());
 }

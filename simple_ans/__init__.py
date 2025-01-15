@@ -1,8 +1,9 @@
 from ._simple_ans import (
-    encode as _encode,
-    decode as _decode,
+    encode_int16 as _encode_int16,
+    decode_int16 as _decode_int16,
+    encode_int32 as _encode_int32,
+    decode_int32 as _decode_int32,
     choose_symbol_counts,
-    add_one_test,
 )
 from dataclasses import dataclass
 import numpy as np
@@ -19,7 +20,7 @@ class EncodedSignal:
         bitstream (numpy.ndarray): uint64 numpy array with encoded bits
         num_bits (int): Number of bits used in the encoding (may be somewhat less than len(bitstream) * 64)
         symbol_counts (numpy.ndarray): uint32 numpy array containing frequency counts for each symbol
-        symbol_values (numpy.ndarray): int32 numpy array containing the actual symbol values
+        symbol_values (numpy.ndarray): int32 or int16 numpy array containing the actual symbol values
         signal_length (int): Length of the original signal in number of elements
     """
 
@@ -27,7 +28,7 @@ class EncodedSignal:
     bitstream: np.ndarray  # uint64 array
     num_bits: int
     symbol_counts: np.ndarray  # uint32 array
-    symbol_values: np.ndarray  # int32 array
+    symbol_values: np.ndarray  # int32 or int16 array
     signal_length: int
 
     def __post_init__(self):
@@ -36,7 +37,12 @@ class EncodedSignal:
         if not isinstance(self.symbol_counts, np.ndarray):
             self.symbol_counts = np.array(self.symbol_counts, dtype=np.uint32)
         if not isinstance(self.symbol_values, np.ndarray):
-            self.symbol_values = np.array(self.symbol_values, dtype=np.int32)
+            # Keep original dtype if it's already a numpy array, otherwise default to int32
+            if isinstance(self.symbol_values, np.ndarray):
+                dtype = self.symbol_values.dtype
+            else:
+                dtype = np.dtype(np.int32)
+            self.symbol_values = np.array(self.symbol_values, dtype=dtype)
         if not isinstance(self.bitstream, np.ndarray):
             self.bitstream = np.array(self.bitstream, dtype=np.uint64)
 
@@ -52,12 +58,17 @@ class EncodedSignal:
             self.symbol_counts.size == self.symbol_values.size
         ), "symbol_counts and symbol_values must have the same size"
         assert self.symbol_counts.dtype == np.uint32, "symbol_counts must be uint32"
-        assert self.symbol_values.dtype == np.int32, "symbol_values must be int32"
+        assert self.symbol_values.dtype in [
+            np.int32,
+            np.int16,
+        ], "symbol_values must be int32 or int16"
         assert self.bitstream.dtype == np.uint64, "bitstream must be uint64"
 
 
 def determine_symbol_counts_and_values(
-    signal: np.ndarray | list, index_length: int | None = None
+    signal: np.ndarray | list,
+    index_length: int | None = None,
+    dtype: np.dtype = np.dtype(np.int32),
 ) -> tuple[np.ndarray, np.ndarray]:
     """Determine symbol counts and unique values from input data.
 
@@ -65,21 +76,22 @@ def determine_symbol_counts_and_values(
         signal: List or numpy array of integers representing the signal
         index_length: Length of the ANS index (must be a power of 2). If None, automatically
             determines minimum valid power of 2 based on number of unique symbols.
+        dtype: Data type for the signal values (np.int32 or np.int16)
 
     Returns:
         tuple: A pair of numpy arrays (symbol_counts, symbol_values) where:
             - symbol_counts is a uint32 array of frequency counts for each symbol
-            - symbol_values is an int32 array of the corresponding unique symbol values
+            - symbol_values is an array of the corresponding unique symbol values with specified dtype
     """
     if len(signal) == 0:
         raise ValueError("Signal cannot be empty")
 
-    import numpy as np
-
     if not isinstance(signal, np.ndarray):
-        signal = np.array(signal, dtype=np.int32)
+        signal = np.array(signal, dtype=dtype)
 
-    assert signal.dtype == np.int32
+    if dtype not in [np.int32, np.int16]:
+        raise ValueError("dtype must be np.int32 or np.int16")
+    assert signal.dtype == dtype
 
     # Get unique values and count frequencies using numpy
     unique_values, counts = np.unique(signal, return_counts=True)
@@ -110,28 +122,38 @@ def determine_symbol_counts_and_values(
     # Use existing choose_symbol_counts to convert proportions to integer counts
     symbol_counts = choose_symbol_counts(proportions, index_length)
 
-    return symbol_counts, unique_values.astype(np.int32)
+    return symbol_counts, unique_values.astype(dtype)
 
 
 def ans_encode(
     signal: np.ndarray | list,
     symbol_counts: np.ndarray | list | None = None,
     symbol_values: np.ndarray | list | None = None,
+    dtype: np.dtype | None = None,
 ) -> EncodedSignal:
     """Encode a signal using ANS (Asymmetric Numeral Systems).
 
     Args:
-        signal: int32 numpy array of signal to encode
+        signal: numpy array or list of signal to encode
         symbol_counts: uint32 numpy array of symbol counts, defaults to None
-        symbol_values: int32 numpy array of symbol values, defaults to None
+        symbol_values: numpy array of symbol values matching dtype, defaults to None
 
     Returns:
         EncodedSignal: Object containing all encoding information
     """
+    if dtype is None:
+        if isinstance(signal, np.ndarray):
+            dtype = signal.dtype
+        else:
+            dtype = np.int16  # type: ignore
+    else:
+        if dtype not in [np.int32, np.int16]:
+            raise ValueError("dtype must be np.int32 or np.int16")
+
     if not isinstance(signal, np.ndarray):
-        signal = np.array(signal, dtype=np.int32)
-    if signal.dtype != np.int32:
-        raise ValueError("Signal must be of type int32")
+        signal = np.array(signal, dtype=dtype)
+    if signal.dtype != dtype:
+        raise ValueError(f"Signal must be of type {dtype}")
 
     # If either is None, determine both
     if symbol_counts is None:
@@ -139,7 +161,9 @@ def ans_encode(
             raise ValueError(
                 "If symbol_values is provided, symbol_counts must also be provided"
             )
-        auto_counts, auto_values = determine_symbol_counts_and_values(signal)
+        auto_counts, auto_values = determine_symbol_counts_and_values(
+            signal, dtype=dtype
+        )
         symbol_counts = auto_counts
         symbol_values = auto_values
     if symbol_values is None:
@@ -151,13 +175,18 @@ def ans_encode(
     if not isinstance(symbol_counts, np.ndarray):
         symbol_counts = np.array(symbol_counts, dtype=np.uint32)
     if not isinstance(symbol_values, np.ndarray):
-        symbol_values = np.array(symbol_values, dtype=np.int32)
+        symbol_values = np.array(symbol_values, dtype=dtype)
     if symbol_counts.dtype != np.uint32:
         raise ValueError("Symbol counts must be of type uint32")
-    if symbol_values.dtype != np.int32:
-        raise ValueError("Symbol values must be of type int32")
+    if symbol_values.dtype != dtype:
+        raise ValueError(f"Symbol values must be of type {dtype}")
 
-    encoded = _encode(signal, symbol_counts, symbol_values)
+    # Use appropriate encode function based on dtype
+    if dtype == np.int32:
+        encoded = _encode_int32(signal, symbol_counts, symbol_values)
+    else:  # dtype == np.int16
+        encoded = _encode_int16(signal, symbol_counts, symbol_values)
+
     return EncodedSignal(
         state=encoded.state,
         bitstream=encoded.bitstream,  # uint64 array from C++
@@ -175,17 +204,27 @@ def ans_decode(encoded: EncodedSignal) -> np.ndarray:
         encoded: EncodedSignal object containing the encoded data and metadata
 
     Returns:
-        decoded_signal: int32 numpy array of the decoded signal
+        decoded_signal: numpy array of the decoded signal with same dtype as original
     """
-    # bitstream is already a list of uint64
-    return _decode(
-        encoded.state,
-        encoded.bitstream,
-        encoded.num_bits,
-        encoded.symbol_counts,
-        encoded.symbol_values,
-        encoded.signal_length,
-    )
+    # Use appropriate decode function based on symbol_values dtype
+    if encoded.symbol_values.dtype == np.int32:
+        return _decode_int32(
+            encoded.state,
+            encoded.bitstream,
+            encoded.num_bits,
+            encoded.symbol_counts,
+            encoded.symbol_values,
+            encoded.signal_length,
+        )
+    else:  # dtype == np.int16
+        return _decode_int16(
+            encoded.state,
+            encoded.bitstream,
+            encoded.num_bits,
+            encoded.symbol_counts,
+            encoded.symbol_values,
+            encoded.signal_length,
+        )
 
 
 __all__ = [
@@ -194,5 +233,4 @@ __all__ = [
     "choose_symbol_counts",
     "determine_symbol_counts_and_values",
     "EncodedSignal",
-    "add_one_test",
 ]

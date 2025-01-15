@@ -1,6 +1,6 @@
 # simple_ans
 
-A Python package for Asymmetric Numeral Systems (ANS) encoding/decoding using a simple C++ implementation.
+A Python package for Asymmetric Numeral Systems (ANS) encoding/decoding using a C++ implementation with pybind11.
 
 The algorithm is based on [this guide](https://graphallthethings.com/posts/streaming-ans-explained/).
 

@@ -162,7 +162,7 @@ def ans_encode(
                 "If symbol_values is provided, symbol_counts must also be provided"
             )
         auto_counts, auto_values = determine_symbol_counts_and_values(
-            signal, dtype=dtype
+            signal, dtype=dtype  # type: ignore
         )
         symbol_counts = auto_counts
         symbol_values = auto_values

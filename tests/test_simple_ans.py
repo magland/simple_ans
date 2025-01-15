@@ -10,27 +10,34 @@ from simple_ans import (
 
 
 def test_encode_decode():
-    # Create a simple test signal
-    signal = np.array([0, 1, 2, 1, 0], dtype=np.int32)
+    # Test all supported types
+    dtypes = [np.int32, np.int16, np.uint32, np.uint16]
+    for dtype in dtypes:
+        # Create a simple test signal
+        signal = np.array([0, 1, 2, 1, 0], dtype=dtype)
 
-    # Create symbol counts and values
-    symbol_counts = np.array([3, 3, 2], dtype=np.uint32)  # For symbols 0,1,2
-    symbol_values = np.array([0, 1, 2], dtype=np.int32)  # Corresponding values
+        # Create symbol counts and values
+        symbol_counts = np.array([3, 3, 2], dtype=np.uint32)  # For symbols 0,1,2
+        symbol_values = np.array([0, 1, 2], dtype=dtype)  # Corresponding values
 
-    # Encode
-    encoded = ans_encode(signal, symbol_counts, symbol_values)
-    assert isinstance(encoded, EncodedSignal), "Result should be EncodedSignal object"
-    assert isinstance(
-        encoded.bitstream, np.ndarray
-    ), "Encoded bitstream should be a numpy array"
-    assert encoded.bitstream.dtype == np.uint64, "Bitstream should be uint64 type"
+        # Encode
+        encoded = ans_encode(signal, symbol_counts, symbol_values)
+        assert isinstance(
+            encoded, EncodedSignal
+        ), "Result should be EncodedSignal object"
+        assert isinstance(
+            encoded.bitstream, np.ndarray
+        ), "Encoded bitstream should be a numpy array"
+        assert encoded.bitstream.dtype == np.uint64, "Bitstream should be uint64 type"
 
-    # Decode
-    decoded = ans_decode(encoded)
+        # Decode
+        decoded = ans_decode(encoded)
 
-    # Verify
-    assert np.array_equal(signal, decoded), "Decoded signal does not match original"
-    print("Test passed: encode/decode works correctly")
+        # Verify
+        assert np.array_equal(
+            signal, decoded
+        ), f"Decoded signal does not match original for dtype {dtype}"
+    print("Test passed: encode/decode works correctly for all types")
 
 
 def test_choose_symbol_counts():
@@ -52,7 +59,9 @@ def test_determine_symbol_counts_and_values():
     assert isinstance(counts, np.ndarray), "Counts should be a numpy array"
     assert isinstance(values, np.ndarray), "Values should be a numpy array"
     assert counts.dtype == np.uint32, "Counts should be uint32 type"
-    assert values.dtype == np.int32, "Values should be int32 type"
+    assert (
+        values.dtype == np.int32
+    ), "Values should match requested dtype (default int32)"
     assert len(counts) == len(values), "Counts and values should have same length"
     assert np.array_equal(
         values, np.array([0, 1, 2], dtype=np.int32)
@@ -80,17 +89,20 @@ def test_determine_symbol_counts_and_values():
 
 def test_auto_symbol_counts():
     print("Starting test_auto_symbol_counts")
-    # Test encoding with auto-determined symbol counts
-    signal = np.array(
-        [0, 1, 2, 1, 0], dtype=np.int32
-    )  # Changed to int32 to match new type
-    print("Signal created")
-    encoded = ans_encode(signal)  # No symbol_counts provided
-    print("Signal encoded")
-    decoded = ans_decode(encoded)
-    print("Signal decoded")
-    assert np.array_equal(signal, decoded), "Decoded signal does not match original"
-    print("Test passed: auto symbol counts works correctly")
+    # Test all supported types
+    dtypes = [np.int32, np.int16, np.uint32, np.uint16]
+    for dtype in dtypes:
+        # Test encoding with auto-determined symbol counts
+        signal = np.array([0, 1, 2, 1, 0], dtype=dtype)
+        print(f"Testing dtype {dtype}")
+        encoded = ans_encode(signal, dtype=dtype)  # No symbol_counts provided
+        print("Signal encoded")
+        decoded = ans_decode(encoded)
+        print("Signal decoded")
+        assert np.array_equal(
+            signal, decoded
+        ), f"Decoded signal does not match original for dtype {dtype}"
+    print("Test passed: auto symbol counts works correctly for all types")
 
 
 def test_incorrect_data_types():
@@ -107,14 +119,19 @@ def test_incorrect_data_types():
     with pytest.raises((TypeError, ValueError)):
         ans_encode(signal, symbol_counts_float, symbol_values)
 
-    # Test with incorrect symbol_values dtype
-    symbol_values_uint = np.array([0, 1, 2], dtype=np.uint32)
+    # Test with mismatched symbol_values dtype
+    signal = np.array([0, 1, 2, 1, 0], dtype=np.int32)
+    symbol_values_wrong = np.array([0, 1, 2], dtype=np.uint32)
     with pytest.raises((TypeError, ValueError)):
-        ans_encode(signal, symbol_counts, symbol_values_uint)
+        ans_encode(signal, symbol_counts, symbol_values_wrong)
 
     # Test with incorrect types in auto mode
     with pytest.raises((TypeError, ValueError)):
         ans_encode(signal_float)  # Should fail with float signal
+
+    # Test with invalid dtype
+    with pytest.raises(ValueError):
+        ans_encode(signal, dtype=np.dtype(np.float32))  # Should fail with float dtype
 
     print("Test passed: incorrect data types handled correctly")
 

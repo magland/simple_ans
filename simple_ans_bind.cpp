@@ -96,9 +96,11 @@ PYBIND11_MODULE(_simple_ans, m)
         .def_readwrite("bitstream", &simple_ans::EncodedData::bitstream)
         .def_readwrite("num_bits", &simple_ans::EncodedData::num_bits);
 
-    // Bind both int32 and int16 versions
+    // Bind signed and unsigned integer versions
     bind_ans_functions<int32_t>(m, "int32");
     bind_ans_functions<int16_t>(m, "int16");
+    bind_ans_functions<uint32_t>(m, "uint32");
+    bind_ans_functions<uint16_t>(m, "uint16");
 
     // Legacy int32_t versions without suffix for backward compatibility
     m.def(

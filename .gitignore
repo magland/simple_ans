@@ -1,3 +1,5 @@
+benchmark_output
+
 # Python specific ignores
 __pycache__/
 *.py[cod]

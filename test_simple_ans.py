@@ -11,7 +11,7 @@ from simple_ans import (
 
 def test_encode_decode():
     # Create a simple test signal
-    signal = np.array([0, 1, 2, 1, 0], dtype=np.uint32)
+    signal = np.array([0, 1, 2, 1, 0], dtype=np.int32)
 
     # Create symbol counts and values
     symbol_counts = np.array([3, 3, 2], dtype=np.uint32)  # For symbols 0,1,2
@@ -21,9 +21,9 @@ def test_encode_decode():
     encoded = ans_encode(signal, symbol_counts, symbol_values)
     assert isinstance(encoded, EncodedSignal), "Result should be EncodedSignal object"
     assert isinstance(
-        encoded.bitstream, list
-    ), "Encoded bitstream should be a list of uint32 values"
-    assert all(isinstance(x, int) for x in encoded.bitstream), "All bitstream elements should be integers"
+        encoded.bitstream, np.ndarray
+    ), "Encoded bitstream should be a numpy array"
+    assert encoded.bitstream.dtype == np.uint64, "Bitstream should be uint64 type"
 
     # Decode
     decoded = ans_decode(encoded)
@@ -35,7 +35,7 @@ def test_encode_decode():
 
 def test_choose_symbol_counts():
     # Test with some probabilities
-    proportions = [0.5, 0.3, 0.2]
+    proportions = np.array([0.5, 0.3, 0.2], dtype=np.float64)
     L = 1024  # Should be power of 2
 
     counts = choose_symbol_counts(proportions, L)
@@ -49,11 +49,13 @@ def test_determine_symbol_counts_and_values():
     # Test with default index length
     signal = [0, 1, 2, 1, 0]
     counts, values = determine_symbol_counts_and_values(signal)
-    assert isinstance(counts, list), "Counts should be a list"
-    assert isinstance(values, list), "Values should be a list"
+    assert isinstance(counts, np.ndarray), "Counts should be a numpy array"
+    assert isinstance(values, np.ndarray), "Values should be a numpy array"
+    assert counts.dtype == np.uint32, "Counts should be uint32 type"
+    assert values.dtype == np.int32, "Values should be int32 type"
     assert len(counts) == len(values), "Counts and values should have same length"
-    assert values == [0, 1, 2], "Values should match unique signal values"
-    assert sum(counts) == 2**16, "Total counts should sum to default index length"
+    assert np.array_equal(values, np.array([0, 1, 2], dtype=np.int32)), "Values should match unique signal values"
+    assert sum(counts) == 2**10, "Total counts should sum to default index length (1024)"
 
     # Test with custom index length
     counts, values = determine_symbol_counts_and_values(signal, index_length=1024)
@@ -87,8 +89,34 @@ def test_auto_symbol_counts():
     print("Test passed: auto symbol counts works correctly")
 
 
+def test_incorrect_data_types():
+    # Test with incorrect signal dtype
+    signal_float = np.array([0, 1, 2, 1, 0], dtype=np.float32)
+    symbol_counts = np.array([3, 3, 2], dtype=np.uint32)
+    symbol_values = np.array([0, 1, 2], dtype=np.int32)
+    with pytest.raises((TypeError, ValueError)):
+        ans_encode(signal_float, symbol_counts, symbol_values)
+
+    # Test with incorrect symbol_counts dtype
+    signal = np.array([0, 1, 2, 1, 0], dtype=np.int32)
+    symbol_counts_float = np.array([3, 3, 2], dtype=np.float32)
+    with pytest.raises((TypeError, ValueError)):
+        ans_encode(signal, symbol_counts_float, symbol_values)
+
+    # Test with incorrect symbol_values dtype
+    symbol_values_uint = np.array([0, 1, 2], dtype=np.uint32)
+    with pytest.raises((TypeError, ValueError)):
+        ans_encode(signal, symbol_counts, symbol_values_uint)
+
+    # Test with incorrect types in auto mode
+    with pytest.raises((TypeError, ValueError)):
+        ans_encode(signal_float)  # Should fail with float signal
+
+    print("Test passed: incorrect data types handled correctly")
+
 if __name__ == "__main__":
     test_encode_decode()
     test_choose_symbol_counts()
     test_determine_symbol_counts_and_values()
     test_auto_symbol_counts()
+    test_incorrect_data_types()

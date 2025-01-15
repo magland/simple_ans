@@ -5,7 +5,7 @@ from simple_ans import ans_encode, ans_decode
 # Generate random test data from normal distribution
 n = 10_000_000
 # Generate signal with normal distribution, ensuring positive values
-signal = np.round(np.random.normal(0, 1, n) * 1).astype(np.int16)
+signal = np.round(np.random.normal(0, 1, n) * 1).astype(np.int32)
 
 # Calculate ideal compression ratio
 vals, counts = np.unique(signal, return_counts=True)
@@ -33,7 +33,7 @@ print(f"Ideal compression ratio: {ideal_compression_ratio}")
 print(f"simple_ans: Compression ratio: {compression_ratio}")
 print(f"simple_ans: Pct of ideal compression: {compression_ratio/ideal_compression_ratio*100:.2f}%")
 print("")
-signal_bytes = len(signal) * 2
+signal_bytes = len(signal) * 4  # int32 = 4 bytes
 print(
     f"simple_ans: Time to encode: {elapsed_encode:.2f} seconds ({signal_bytes/elapsed_encode/1e6:.2f} MB/s)"
 )
@@ -44,7 +44,7 @@ print("")
 
 import zlib
 timer = time.time()
-buf_compressed = zlib.compress(np.array(signal, dtype=np.int16).tobytes(), level=6)
+buf_compressed = zlib.compress(signal.tobytes(), level=6)
 elapsed_zlib = time.time() - timer
 zlib_compression_ratio = signal_bytes / len(buf_compressed)
 print(f"Zlib (level 6) compression ratio: {zlib_compression_ratio:.2f}")
@@ -53,7 +53,7 @@ print(
     f"Time to zlib compress: {elapsed_zlib:.2f} seconds ({signal_bytes/elapsed_zlib/1e6:.2f} MB/s)"
 )
 timer = time.time()
-signal_decompressed = np.frombuffer(zlib.decompress(buf_compressed), dtype=np.int16)
+signal_decompressed = np.frombuffer(zlib.decompress(buf_compressed), dtype=np.int32)
 elapsed_zlib_decode = time.time() - timer
 print(
     f"Time to zlib decompress: {elapsed_zlib_decode:.2f} seconds ({signal_bytes/elapsed_zlib_decode/1e6:.2f} MB/s)"
@@ -63,7 +63,7 @@ print("")
 import zstandard as zstd
 cctx = zstd.ZstdCompressor(level=13)
 timer = time.time()
-compressed = cctx.compress(np.array(signal, dtype=np.int16).tobytes())
+compressed = cctx.compress(signal.tobytes())
 elapsed_zstd = time.time() - timer
 zstd_compression_ratio = signal_bytes / len(compressed)
 print(f"Zstandard (level 13) compression ratio: {zstd_compression_ratio:.2f}")
@@ -73,7 +73,7 @@ print(
 )
 dctx = zstd.ZstdDecompressor()
 timer = time.time()
-signal_decompressed = np.frombuffer(dctx.decompress(compressed), dtype=np.int16)
+signal_decompressed = np.frombuffer(dctx.decompress(compressed), dtype=np.int32)
 elapsed_zstd_decode = time.time() - timer
 print(
     f"Time to zstd decompress: {elapsed_zstd_decode:.2f} seconds ({signal_bytes/elapsed_zstd_decode/1e6:.2f} MB/s)"
@@ -82,7 +82,7 @@ print("")
 
 import lzma
 timer = time.time()
-compressed = lzma.compress(np.array(signal, dtype=np.int16).tobytes(), preset=3)
+compressed = lzma.compress(signal.tobytes(), preset=3)
 elapsed_lzma = time.time() - timer
 lzma_compression_ratio = signal_bytes / len(compressed)
 print(f"LZMA compression ratio: {lzma_compression_ratio:.2f}")
@@ -91,7 +91,7 @@ print(
     f"Time to lzma compress: {elapsed_lzma:.2f} seconds ({signal_bytes/elapsed_lzma/1e6:.2f} MB/s)"
 )
 timer = time.time()
-signal_decompressed = np.frombuffer(lzma.decompress(compressed), dtype=np.int16)
+signal_decompressed = np.frombuffer(lzma.decompress(compressed), dtype=np.int32)
 elapsed_lzma_decode = time.time() - timer
 print(
     f"Time to lzma decompress: {elapsed_lzma_decode:.2f} seconds ({signal_bytes/elapsed_lzma_decode/1e6:.2f} MB/s)"

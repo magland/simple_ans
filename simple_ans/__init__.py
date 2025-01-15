@@ -2,7 +2,7 @@ from ._simple_ans import encode as _encode, decode as _decode, choose_symbol_cou
 from dataclasses import dataclass
 from collections import Counter
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 @dataclass

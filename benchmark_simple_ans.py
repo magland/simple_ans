@@ -31,7 +31,9 @@ compressed_size_bits = (
 compression_ratio = (len(signal) * 16) / compressed_size_bits
 print(f"Ideal compression ratio: {ideal_compression_ratio}")
 print(f"simple_ans: Compression ratio: {compression_ratio}")
-print(f"simple_ans: Pct of ideal compression: {compression_ratio/ideal_compression_ratio*100:.2f}%")
+print(
+    f"simple_ans: Pct of ideal compression: {compression_ratio/ideal_compression_ratio*100:.2f}%"
+)
 print("")
 signal_bytes = len(signal) * 4  # int32 = 4 bytes
 print(
@@ -43,12 +45,15 @@ print(
 print("")
 
 import zlib
+
 timer = time.time()
 buf_compressed = zlib.compress(signal.tobytes(), level=6)
 elapsed_zlib = time.time() - timer
 zlib_compression_ratio = signal_bytes / len(buf_compressed)
 print(f"Zlib (level 6) compression ratio: {zlib_compression_ratio:.2f}")
-print(f'Zlib (level 6) pct of ideal compression: {zlib_compression_ratio/ideal_compression_ratio*100:.2f}%')
+print(
+    f"Zlib (level 6) pct of ideal compression: {zlib_compression_ratio/ideal_compression_ratio*100:.2f}%"
+)
 print(
     f"Time to zlib compress: {elapsed_zlib:.2f} seconds ({signal_bytes/elapsed_zlib/1e6:.2f} MB/s)"
 )
@@ -61,13 +66,16 @@ print(
 print("")
 
 import zstandard as zstd
+
 cctx = zstd.ZstdCompressor(level=13)
 timer = time.time()
 compressed = cctx.compress(signal.tobytes())
 elapsed_zstd = time.time() - timer
 zstd_compression_ratio = signal_bytes / len(compressed)
 print(f"Zstandard (level 13) compression ratio: {zstd_compression_ratio:.2f}")
-print(f'Zstandard (level 13) pct of ideal compression: {zstd_compression_ratio/ideal_compression_ratio*100:.2f}%')
+print(
+    f"Zstandard (level 13) pct of ideal compression: {zstd_compression_ratio/ideal_compression_ratio*100:.2f}%"
+)
 print(
     f"Time to zstd compress: {elapsed_zstd:.2f} seconds ({signal_bytes/elapsed_zstd/1e6:.2f} MB/s)"
 )
@@ -81,12 +89,15 @@ print(
 print("")
 
 import lzma
+
 timer = time.time()
 compressed = lzma.compress(signal.tobytes(), preset=3)
 elapsed_lzma = time.time() - timer
 lzma_compression_ratio = signal_bytes / len(compressed)
 print(f"LZMA compression ratio: {lzma_compression_ratio:.2f}")
-print(f'LZMA pct of ideal compression: {lzma_compression_ratio/ideal_compression_ratio*100:.2f}%')
+print(
+    f"LZMA pct of ideal compression: {lzma_compression_ratio/ideal_compression_ratio*100:.2f}%"
+)
 print(
     f"Time to lzma compress: {elapsed_lzma:.2f} seconds ({signal_bytes/elapsed_lzma/1e6:.2f} MB/s)"
 )
@@ -99,6 +110,7 @@ print(
 
 print("\nTesting data transfer overhead:")
 from simple_ans import add_one_test
+
 timer = time.time()
 signal_plus_one = add_one_test(signal)
 elapsed_add_one = time.time() - timer

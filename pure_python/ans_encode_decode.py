@@ -180,7 +180,7 @@ def choose_symbol_counts(proportions, L):
     return counts
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     aa = np.round(np.random.normal(0, 1, 1000) * 5).astype(np.int16)
     vals, counts = np.unique(aa, return_counts=True)
     counts = np.sort(counts)
@@ -196,7 +196,9 @@ if __name__ == '__main__':
     signal = np.random.choice(num_symbols, n, p=probs).tolist()
     print(f"Signal length: {len(signal)}")
     signal_encoded, bitstream = ans_encode(signal=signal, symbol_counts=symbol_counts)
-    signal_decoded = ans_decode(state=signal_encoded, bitstream=bitstream, n=n, symbol_counts=symbol_counts)
+    signal_decoded = ans_decode(
+        state=signal_encoded, bitstream=bitstream, n=n, symbol_counts=symbol_counts
+    )
     assert len(signal_decoded) == len(signal)
     assert np.all(signal_decoded == signal)
     print("Decoded signal matches original signal")
@@ -204,5 +206,7 @@ if __name__ == '__main__':
     compressed_size_bits = len(bitstream)
     compression_ratio = (len(signal) * 16) / compressed_size_bits
     print(f"Compression ratio: {compression_ratio}")
-    print(f'Ideal compression ratio: {ideal_compression_ratio}')
-    print(f"Pct of ideal compression: {compression_ratio/ideal_compression_ratio*100:.2f}%")
+    print(f"Ideal compression ratio: {ideal_compression_ratio}")
+    print(
+        f"Pct of ideal compression: {compression_ratio/ideal_compression_ratio*100:.2f}%"
+    )

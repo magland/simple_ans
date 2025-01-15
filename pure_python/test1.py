@@ -24,7 +24,9 @@ signal_encoded, bitstream = ans_encode(signal=signal, symbol_counts=symbol_count
 elapsed_encode = time.time() - timer
 
 timer = time.time()
-signal_decoded = ans_decode(state=signal_encoded, bitstream=bitstream, n=n, symbol_counts=symbol_counts)
+signal_decoded = ans_decode(
+    state=signal_encoded, bitstream=bitstream, n=n, symbol_counts=symbol_counts
+)
 elapsed_decode = time.time() - timer
 
 assert len(signal_decoded) == len(signal)
@@ -34,12 +36,16 @@ print("Decoded signal matches original signal")
 compressed_size_bits = len(bitstream)
 compression_ratio = (len(signal) * 16) / compressed_size_bits
 print(f"Compression ratio: {compression_ratio}")
-print(f'Ideal compression ratio: {ideal_compression_ratio}')
+print(f"Ideal compression ratio: {ideal_compression_ratio}")
 print(f"Pct of ideal compression: {compression_ratio/ideal_compression_ratio*100:.2f}%")
 print("")
 signal_bytes = len(signal) * 2
-print(f"Time to encode: {elapsed_encode:.2f} seconds ({signal_bytes/elapsed_encode/1e6:.2f} MB/s)")
-print(f"Time to decode: {elapsed_decode:.2f} seconds ({signal_bytes/elapsed_decode/1e6:.2f} MB/s)")
+print(
+    f"Time to encode: {elapsed_encode:.2f} seconds ({signal_bytes/elapsed_encode/1e6:.2f} MB/s)"
+)
+print(
+    f"Time to decode: {elapsed_decode:.2f} seconds ({signal_bytes/elapsed_decode/1e6:.2f} MB/s)"
+)
 
 # import zlib
 # timer = time.time()

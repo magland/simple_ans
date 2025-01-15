@@ -54,8 +54,12 @@ def test_determine_symbol_counts_and_values():
     assert counts.dtype == np.uint32, "Counts should be uint32 type"
     assert values.dtype == np.int32, "Values should be int32 type"
     assert len(counts) == len(values), "Counts and values should have same length"
-    assert np.array_equal(values, np.array([0, 1, 2], dtype=np.int32)), "Values should match unique signal values"
-    assert sum(counts) == 2**10, "Total counts should sum to default index length (1024)"
+    assert np.array_equal(
+        values, np.array([0, 1, 2], dtype=np.int32)
+    ), "Values should match unique signal values"
+    assert (
+        sum(counts) == 2**10
+    ), "Total counts should sum to default index length (1024)"
 
     # Test with custom index length
     counts, values = determine_symbol_counts_and_values(signal, index_length=1024)
@@ -113,6 +117,7 @@ def test_incorrect_data_types():
         ans_encode(signal_float)  # Should fail with float signal
 
     print("Test passed: incorrect data types handled correctly")
+
 
 if __name__ == "__main__":
     test_encode_decode()

@@ -1,4 +1,9 @@
-from ._simple_ans import encode as _encode, decode as _decode, choose_symbol_counts, add_one_test
+from ._simple_ans import (
+    encode as _encode,
+    decode as _decode,
+    choose_symbol_counts,
+    add_one_test,
+)
 from dataclasses import dataclass
 import numpy as np
 
@@ -43,13 +48,17 @@ class EncodedSignal:
         if not isinstance(self.signal_length, int):
             raise TypeError("signal_length must be an integer")
 
-        assert self.symbol_counts.size == self.symbol_values.size, "symbol_counts and symbol_values must have the same size"
+        assert (
+            self.symbol_counts.size == self.symbol_values.size
+        ), "symbol_counts and symbol_values must have the same size"
         assert self.symbol_counts.dtype == np.uint32, "symbol_counts must be uint32"
         assert self.symbol_values.dtype == np.int32, "symbol_values must be int32"
         assert self.bitstream.dtype == np.uint64, "bitstream must be uint64"
 
 
-def determine_symbol_counts_and_values(signal: np.ndarray | list, index_length: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+def determine_symbol_counts_and_values(
+    signal: np.ndarray | list, index_length: int | None = None
+) -> tuple[np.ndarray, np.ndarray]:
     """Determine symbol counts and unique values from input data.
 
     Args:
@@ -91,7 +100,9 @@ def determine_symbol_counts_and_values(signal: np.ndarray | list, index_length: 
     elif not is_power_of_two(index_length):
         raise ValueError("Index length must be a power of 2")
     if index_length < num_symbols:
-        raise ValueError(f"Index length ({index_length}) must be greater than or equal to the number of unique symbols ({num_symbols})")
+        raise ValueError(
+            f"Index length ({index_length}) must be greater than or equal to the number of unique symbols ({num_symbols})"
+        )
 
     # Convert to proportions as numpy array
     proportions = counts.astype(np.float64) / total
@@ -102,9 +113,11 @@ def determine_symbol_counts_and_values(signal: np.ndarray | list, index_length: 
     return symbol_counts, unique_values.astype(np.int32)
 
 
-def ans_encode(signal: np.ndarray | list,
-               symbol_counts: np.ndarray | list | None = None,
-               symbol_values: np.ndarray | list | None = None) -> EncodedSignal:
+def ans_encode(
+    signal: np.ndarray | list,
+    symbol_counts: np.ndarray | list | None = None,
+    symbol_values: np.ndarray | list | None = None,
+) -> EncodedSignal:
     """Encode a signal using ANS (Asymmetric Numeral Systems).
 
     Args:
@@ -123,12 +136,16 @@ def ans_encode(signal: np.ndarray | list,
     # If either is None, determine both
     if symbol_counts is None:
         if symbol_values is not None:
-            raise ValueError("If symbol_values is provided, symbol_counts must also be provided")
+            raise ValueError(
+                "If symbol_values is provided, symbol_counts must also be provided"
+            )
         auto_counts, auto_values = determine_symbol_counts_and_values(signal)
         symbol_counts = auto_counts
         symbol_values = auto_values
     if symbol_values is None:
-        raise ValueError("If symbol_counts is provided, symbol_values must also be provided")
+        raise ValueError(
+            "If symbol_counts is provided, symbol_values must also be provided"
+        )
 
     # Ensure arrays are the right type
     if not isinstance(symbol_counts, np.ndarray):

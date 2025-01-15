@@ -4,10 +4,10 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "simple_ans"
-version = "0.2.0"
+version = "0.2.1"
 description = "Simple ANS (Asymmetric Numeral Systems) implementation"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 authors = [
     { name = "Jeremy Magland", email = "jmagland@flatironinstitute.org" }
 ]
@@ -16,7 +16,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -24,7 +23,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "numpy>=1.19.0"
+    "numpy>=2.0.0",
 ]
 
 [tool.scikit-build]
@@ -33,6 +32,7 @@ cmake.args = []
 cmake.verbose = true
 sdist.include = ["simple_ans/cpp/*"]
 wheel.packages = ["simple_ans"]
+build-dir = "simple_ans"
 
 [tool.scikit-build.cmake.define]
 SKBUILD = "ON"

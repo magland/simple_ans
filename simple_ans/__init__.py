@@ -1,4 +1,4 @@
-from ._simple_ans import encode as _encode, decode as _decode, choose_symbol_counts
+from ._simple_ans import encode as _encode, decode as _decode, choose_symbol_counts, add_one_test
 from dataclasses import dataclass
 from collections import Counter
 
@@ -132,4 +132,5 @@ __all__ = [
     "choose_symbol_counts",
     "determine_symbol_counts_and_values",
     "EncodedSignal",
+    "add_one_test",
 ]

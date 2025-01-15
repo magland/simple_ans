@@ -29,4 +29,7 @@ inline bool is_power_of_2(uint32_t x) {
 // Convert real-valued proportions into integer counts summing to L
 std::vector<uint32_t> choose_symbol_counts(const std::vector<double>& proportions, uint32_t L);
 
+// Test function that adds 1 to each element of an array - for benchmarking data transfer
+std::vector<int32_t> add_one_test(const std::vector<int32_t>& input);
+
 } // namespace simple_ans

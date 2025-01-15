@@ -96,3 +96,18 @@ elapsed_lzma_decode = time.time() - timer
 print(
     f"Time to lzma decompress: {elapsed_lzma_decode:.2f} seconds ({signal_bytes/elapsed_lzma_decode/1e6:.2f} MB/s)"
 )
+
+print("\nTesting data transfer overhead:")
+from simple_ans import add_one_test
+timer = time.time()
+signal_plus_one = add_one_test(signal)
+elapsed_add_one = time.time() - timer
+
+# Verify result
+expected = signal + 1
+assert np.all(signal_plus_one == expected)
+print("Add one test result verified correct")
+
+print(
+    f"Time for add_one_test: {elapsed_add_one:.2f} seconds ({signal_bytes/elapsed_add_one/1e6:.2f} MB/s)"
+)

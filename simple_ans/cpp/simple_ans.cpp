@@ -217,4 +217,12 @@ std::vector<uint32_t> choose_symbol_counts(const std::vector<double>& proportion
     return counts;
 }
 
+std::vector<int32_t> add_one_test(const std::vector<int32_t>& input) {
+    std::vector<int32_t> output(input.size());
+    for (size_t i = 0; i < input.size(); ++i) {
+        output[i] = input[i] + 1;
+    }
+    return output;
+}
+
 } // namespace simple_ans

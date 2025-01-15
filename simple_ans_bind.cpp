@@ -23,4 +23,8 @@ PYBIND11_MODULE(_simple_ans, m) {
     m.def("choose_symbol_counts", &simple_ans::choose_symbol_counts,
           "Convert real-valued proportions into integer counts summing to L",
           py::arg("proportions"), py::arg("L"));
+
+    m.def("add_one_test", &simple_ans::add_one_test,
+          "Test function that adds 1 to each element of an array - for benchmarking data transfer",
+          py::arg("input"));
 }

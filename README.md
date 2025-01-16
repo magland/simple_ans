@@ -1,8 +1,10 @@
 # simple_ans
 
-A Python package that provides lossless compression of integer datasets through [Asymmetric Numeral Systems (ANS)](https://ieeexplore.ieee.org/document/7170048), implemented in [C++](./simple_ans/cpp) with pybind11 bindings.
+A Python package that provides lossless compression of integer datasets through [Asymmetric Numeral Systems (ANS)](https://ieeexplore.ieee.org/document/7170048), implemented in C++ with pybind11 bindings.
 
 The implementation is based on [this guide](https://graphallthethings.com/posts/streaming-ans-explained/).
+
+While there are certainly many ANS implementations that are parts of other packages, this one strives to be as simple as possible, with the [C++ implementation](./simple_ans/cpp) being just a small amount of code in a single file. The Python interface is also simple and easy to use.
 
 ## Installation
 
@@ -56,6 +58,16 @@ print(f"Compression ratio: {compression_ratio:.2f}x")
 ```
 
 The package supports four integer types: `int16`, `uint16`, `int32`, and `uint32`.
+
+## Simple benchmark
+
+You can run a very simple benchmark that compares simple_ans with `zlib`, `zstandard`, and `lzma` at various compression levels for a toy dataset of quantized Gaussian noise. See [devel/benchmark.py](./devel/benchmark.py) and [devel/benchmark.sh](./devel/benchmark_ans_only.py).
+
+The benchmark.py runs in a CI environment and produces the following graph:
+
+![Benchmark](https://github.com/magland/simple_ans/blob/benchmark-results/benchmark-results/benchmark.png?raw=true)
+
+We see that for this example, the ANS-based compression ratio is higher than the other methods, almost reaching the theoretical ideal. The encode rate in MB/s is better than most other methods, whereas the decode rate is slower than the other methods. I think in principle, we should be able to speed up the decoding. Let me know if you have ideas for this.
 
 ## Author
 

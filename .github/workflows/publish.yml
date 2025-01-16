@@ -24,6 +24,7 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install pytest numpy
+          python -m pip install scikit-build-core pybind11 cmake ninja
           python -m pip install -e .
 
       - name: Run tests
@@ -46,11 +47,12 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel
+      - name: Install build dependencies
+        run: |
+          python -m pip install cibuildwheel cmake ninja
 
       - name: Build wheels
-        run: python -m cibuildwheel --output-dir wheelhouse
+        run: python -m cibuildwheel --output-dir dist
         env:
           CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-* cp313-* pp38-* pp39-* pp310-*
           CIBW_ARCHS_LINUX: x86_64 i686
@@ -58,18 +60,19 @@ jobs:
           CIBW_ARCHS_MACOS: x86_64 arm64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_MANYLINUX_I686_IMAGE: manylinux2014
+          CIBW_BEFORE_BUILD: pip install scikit-build-core pybind11 cmake ninja
 
       - name: Build sdist
         run: |
-          pip install build
-          python -m build --sdist
+          pip install scikit-build-core pybind11 cmake ninja
+          python -m scikit_build_core sdist --dist-dir dist
 
       - name: Upload wheels as artifacts
         uses: actions/upload-artifact@v3
         with:
           name: wheels
           path: |
-            wheelhouse/*.whl
+            dist/*.whl
             dist/*.tar.gz
 
   upload_pypi:

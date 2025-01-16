@@ -216,12 +216,33 @@ void decode_t(T* output,
         state = L_s + state - L - cumsum[s];
 
         // read from the bit stream and get us back to the range [L, 2L)
-        while (state < L)
+        // determine how many bits need to be read
+        uint32_t num_bits_needed = 0;
+        while ((state << num_bits_needed) < L)
         {
-            uint32_t word_idx = bit_pos >> 6;  // Divide by 64
-            uint32_t bit_idx = bit_pos & 63;   // Modulo 64
-            state = (state << 1) | ((bitstream[word_idx] >> bit_idx) & 1);
-            bit_pos--;
+            num_bits_needed++;
+        }
+        if (num_bits_needed > 0) {
+            if ((bit_pos & 63) >= (num_bits_needed - 1)) {
+                // in this case we can grab all the bits we need at once from the current word
+                // note: it wasn't clear that this trick was making a difference in performance
+                uint32_t word_idx = bit_pos >> 6;  // Divide by 64
+                uint32_t bit_idx = bit_pos & 63;   // Modulo 64
+                // get bits from bit_idx - num_bits_needed + 1 to bit_idx
+                uint32_t bits = static_cast<uint32_t>((bitstream[word_idx] >> (bit_idx - num_bits_needed + 1)) & ((1 << num_bits_needed) - 1));
+                state = (state << num_bits_needed) | bits;
+                bit_pos -= num_bits_needed;
+            }
+            else {
+                // this is possibly the slower case, but should be less common
+                for (uint32_t j = 0; j < num_bits_needed; ++j)
+                {
+                    uint32_t word_idx = bit_pos >> 6;  // Divide by 64
+                    uint32_t bit_idx = bit_pos & 63;   // Modulo 64
+                    state = (state << 1) | ((bitstream[word_idx] >> bit_idx) & 1);
+                    bit_pos--;
+                }
+            }
         }
 
         output[n - 1 - i] = symbol_values[s];

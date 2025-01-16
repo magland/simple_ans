@@ -84,7 +84,7 @@ def determine_symbol_counts_and_values(
     signal: Union[np.ndarray, list],
     index_length: Union[int, None] = None,
     dtype: Union[np.dtype, None] = None,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple:
     """Determine symbol counts and unique values from input data.
 
     Args:

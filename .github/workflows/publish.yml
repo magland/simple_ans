@@ -9,7 +9,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
 
     steps:
@@ -34,7 +35,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +54,7 @@ jobs:
         env:
           CIBW_BUILD: cp38-* cp39-* cp310-* cp311-* cp312-* cp313-* pp38-* pp39-* pp310-*
           CIBW_ARCHS_LINUX: x86_64 i686
-          CIBW_ARCHS_WINDOWS: AMD64 x86
+          # CIBW_ARCHS_WINDOWS: AMD64 x86
           CIBW_ARCHS_MACOS: x86_64 arm64
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_MANYLINUX_I686_IMAGE: manylinux2014

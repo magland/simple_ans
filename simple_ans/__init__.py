@@ -10,6 +10,7 @@ from ._simple_ans import (
     choose_symbol_counts,
 )
 from dataclasses import dataclass
+from typing import Union
 import numpy as np
 
 __version__ = "0.2.3"
@@ -80,9 +81,9 @@ class EncodedSignal:
 
 
 def determine_symbol_counts_and_values(
-    signal: np.ndarray | list,
-    index_length: int | None = None,
-    dtype: np.dtype | None = None,
+    signal: Union[np.ndarray, list],
+    index_length: Union[int, None] = None,
+    dtype: Union[np.dtype, None] = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Determine symbol counts and unique values from input data.
 
@@ -143,10 +144,10 @@ def determine_symbol_counts_and_values(
 
 
 def ans_encode(
-    signal: np.ndarray | list,
-    symbol_counts: np.ndarray | list | None = None,
-    symbol_values: np.ndarray | list | None = None,
-    dtype: np.dtype | None = None,
+    signal: Union[np.ndarray, list],
+    symbol_counts: Union[np.ndarray, list, None] = None,
+    symbol_values: Union[np.ndarray, list, None] = None,
+    dtype: Union[np.dtype, None] = None,
 ) -> EncodedSignal:
     """Encode a signal using ANS (Asymmetric Numeral Systems).
 

@@ -200,6 +200,20 @@ void decode_t(T* output,
         }
     }
 
+    // Prepare num_bytes_needed_lookup
+    // For each i, it's the smallest number n such that i * 2^n >= L
+    std::vector<uint32_t> num_bits_needed_lookup(L);
+    uint32_t X = 32 - __builtin_clz(L);  // log2(L)
+    for (uint32_t n = 1; n <= X; ++n)
+    {
+        uint32_t L_0 = L >> n;
+        uint32_t L_1 = L >> (n - 1);
+        for (uint32_t i = L_0; i < L_1; ++i)
+        {
+            num_bits_needed_lookup[i] = n;
+        }
+    }
+
     // Prepare bit reading
     int64_t bit_pos = num_bits - 1;
     const uint32_t L_mask = L - 1;  // For fast modulo since L is power of 2
@@ -215,32 +229,31 @@ void decode_t(T* output,
         uint32_t L_s = symbol_counts[s];
         state = L_s + state - L - cumsum[s];
 
-        // read from the bit stream and get us back to the range [L, 2L)
-        // determine how many bits need to be read
-        uint32_t num_bits_needed = 0;
-        while ((state << num_bits_needed) < L)
+        if (state < L) // is this needeed?
         {
-            num_bits_needed++;
-        }
-        if (num_bits_needed > 0) {
-            if ((bit_pos & 63) >= (num_bits_needed - 1)) {
-                // in this case we can grab all the bits we need at once from the current word
-                // note: it wasn't clear that this trick was making a difference in performance
-                uint32_t word_idx = bit_pos >> 6;  // Divide by 64
-                uint32_t bit_idx = bit_pos & 63;   // Modulo 64
-                // get bits from bit_idx - num_bits_needed + 1 to bit_idx
-                uint32_t bits = static_cast<uint32_t>((bitstream[word_idx] >> (bit_idx - num_bits_needed + 1)) & ((1 << num_bits_needed) - 1));
-                state = (state << num_bits_needed) | bits;
-                bit_pos -= num_bits_needed;
-            }
-            else {
-                // this is possibly the slower case, but should be less common
-                for (uint32_t j = 0; j < num_bits_needed; ++j)
-                {
+            // read from the bit stream and get us back to the range [L, 2L)
+            // determine how many bits need to be read
+            uint32_t num_bits_needed = num_bits_needed_lookup[state];
+            if (num_bits_needed > 0) {
+                if ((bit_pos & 63) >= (num_bits_needed - 1)) {
+                    // in this case we can grab all the bits we need at once from the current word
+                    // note: it wasn't clear that this trick was making a difference in performance
                     uint32_t word_idx = bit_pos >> 6;  // Divide by 64
                     uint32_t bit_idx = bit_pos & 63;   // Modulo 64
-                    state = (state << 1) | ((bitstream[word_idx] >> bit_idx) & 1);
-                    bit_pos--;
+                    // get bits from bit_idx - num_bits_needed + 1 to bit_idx
+                    uint32_t bits = static_cast<uint32_t>((bitstream[word_idx] >> (bit_idx - num_bits_needed + 1)) & ((1 << num_bits_needed) - 1));
+                    state = (state << num_bits_needed) | bits;
+                    bit_pos -= num_bits_needed;
+                }
+                else {
+                    // this is possibly the slower case, but should be less common
+                    for (uint32_t j = 0; j < num_bits_needed; ++j)
+                    {
+                        uint32_t word_idx = bit_pos >> 6;  // Divide by 64
+                        uint32_t bit_idx = bit_pos & 63;   // Modulo 64
+                        state = (state << 1) | ((bitstream[word_idx] >> bit_idx) & 1);
+                        bit_pos--;
+                    }
                 }
             }
         }

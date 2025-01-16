@@ -61,9 +61,9 @@ The package supports four integer types: `int16`, `uint16`, `int32`, and `uint32
 
 ## Simple benchmark
 
-You can run a very simple benchmark that compares simple_ans with `zlib`, `zstandard`, and `lzma` at various compression levels for a toy dataset of quantized Gaussian noise. See [devel/benchmark.py](./devel/benchmark.py) and [devel/benchmark.sh](./devel/benchmark_ans_only.py).
+You can run a very simple benchmark that compares simple_ans with `zlib`, `zstandard`, and `lzma` at various compression levels for a toy dataset of quantized Gaussian noise. See [devel/benchmark.py](./devel/benchmark.py) and [devel/benchmark_ans_only.py](./devel/benchmark_ans_only.py).
 
-The benchmark.py runs in a CI environment and produces the following graph:
+The benchmark.py also runs in a CI environment and produces the following graph:
 
 ![Benchmark](https://github.com/magland/simple_ans/blob/benchmark-results/benchmark-results/benchmark.png?raw=true)
 

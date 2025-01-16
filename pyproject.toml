@@ -23,7 +23,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "numpy>=2.0.0",
+    "numpy>=1.21.0",
 ]
 
 [tool.scikit-build]

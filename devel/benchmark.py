@@ -1,4 +1,5 @@
 import time
+import os
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -190,6 +191,10 @@ output = {
     "ideal_compression_ratio": float(ideal_compression_ratio),
     "results": results,
 }
+
+if not os.path.exists("benchmark_output"):
+    os.makedirs("benchmark_output")
+
 with open("benchmark_output/benchmark.json", "w") as f:
     json.dump(output, f, indent=2)
 

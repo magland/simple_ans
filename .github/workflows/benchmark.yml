@@ -1,0 +1,59 @@
+name: Run Benchmarks
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches: [ main ]  # Run on main branch pushes
+
+jobs:
+  benchmark:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install pytest numpy
+          python -m pip install -e .
+
+      - name: Run tests
+        run: python -m pytest tests/
+
+      - name: Install benchmark dependencies
+        run: |
+          python -m pip install matplotlib zstandard
+
+      - name: Run benchmark
+        run: |
+          python devel/benchmark.py
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Create and switch to benchmark branch
+        run: |
+          # Create a new orphan branch (no history)
+          git checkout --orphan benchmark-new
+          # Remove everything
+          git rm -rf .
+          # Create benchmark_output directory
+          mkdir -p benchmark_output
+          # Copy benchmark results
+          cp benchmark_output/benchmark.json benchmark_output/
+          cp benchmark_output/benchmark.png benchmark_output/
+          # Add and commit the benchmark results
+          git add benchmark_output/benchmark.json benchmark_output/benchmark.png
+          git commit -m "Update benchmark results"
+
+      - name: Force push to benchmark branch
+        run: |
+          git push origin HEAD:benchmark --force

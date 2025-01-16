@@ -36,14 +36,7 @@ assert np.all(signal_decoded == signal)
 print("Decoded signal matches original signal")
 
 # 64 bits per bitstream word, 32 bits for state, 32 bits per symbol count, 32 bits per symbol value, 32 bits for num_bits, 32 bits for signal_length
-compressed_size_bits = (
-    len(encoded.bitstream) * 64
-    + 32
-    + 32 * len(encoded.symbol_counts)
-    + 32 * len(encoded.symbol_values)
-    + 32
-    + 32
-)
+compressed_size_bits = encoded.size() * 8
 signal_bytes = len(signal.tobytes())
 compression_ratio = signal_bytes * 8 / compressed_size_bits
 

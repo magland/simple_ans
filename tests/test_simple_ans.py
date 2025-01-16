@@ -26,9 +26,9 @@ def test_encode_decode():
             encoded, EncodedSignal
         ), "Result should be EncodedSignal object"
         assert isinstance(
-            encoded.bitstream, np.ndarray
-        ), "Encoded bitstream should be a numpy array"
-        assert encoded.bitstream.dtype == np.uint64, "Bitstream should be uint64 type"
+            encoded.bitstream, bytes
+        ), "Encoded bitstream should be bytes"
+        assert len(encoded.bitstream) % 8 == 0, "Bitstream length should be multiple of 8"
 
         # Decode
         decoded = ans_decode(encoded)
@@ -55,7 +55,7 @@ def test_choose_symbol_counts():
 def test_determine_symbol_counts_and_values():
     # Test with default index length
     signal = [0, 1, 2, 1, 0]
-    counts, values = determine_symbol_counts_and_values(signal)
+    counts, values = determine_symbol_counts_and_values(signal, dtype=np.dtype(np.int32))
     assert isinstance(counts, np.ndarray), "Counts should be a numpy array"
     assert isinstance(values, np.ndarray), "Values should be a numpy array"
     assert counts.dtype == np.uint32, "Counts should be uint32 type"
@@ -69,7 +69,7 @@ def test_determine_symbol_counts_and_values():
     assert sum(counts) == 2**16, "Total counts should sum to default index length"
 
     # Test with custom index length
-    counts, values = determine_symbol_counts_and_values(signal, index_length=1024)
+    counts, values = determine_symbol_counts_and_values(signal, index_length=1024, dtype=np.dtype(np.int32))
     assert sum(counts) == 1024, "Total counts should sum to specified index length"
 
     # Test error cases

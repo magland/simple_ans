@@ -21,7 +21,7 @@ class EncodedSignal:
 
     Attributes:
         state (int): Integer representing the final encoder state
-        bitstream (numpy.ndarray): uint64 numpy array with encoded bits
+        bitstream (bytes): Bytes object containing the encoded bitstream
         num_bits (int): Number of bits used in the encoding (may be somewhat less than len(bitstream) * 64)
         symbol_counts (numpy.ndarray): uint32 numpy array containing frequency counts for each symbol
         symbol_values (numpy.ndarray): int32, int16, uint32, or uint16 numpy array containing the actual symbol values
@@ -29,11 +29,17 @@ class EncodedSignal:
     """
 
     state: int
-    bitstream: np.ndarray  # uint64 array
+    bitstream: bytes  # uint64 array
     num_bits: int
     symbol_counts: np.ndarray  # uint32 array
     symbol_values: np.ndarray  # int32 or int16 array
     signal_length: int
+
+    def size(self) -> int:
+        """Return the size of the encoded signal in bytes."""
+        return (
+            len(self.bitstream) + 4 * self.symbol_counts.nbytes + self.symbol_values.nbytes + 96
+        )
 
     def __post_init__(self):
         """Validate and convert data types after initialization."""
@@ -47,8 +53,11 @@ class EncodedSignal:
             else:
                 dtype = np.dtype(np.int32)
             self.symbol_values = np.array(self.symbol_values, dtype=dtype)
-        if not isinstance(self.bitstream, np.ndarray):
-            self.bitstream = np.array(self.bitstream, dtype=np.uint64)
+        if not isinstance(self.bitstream, bytes):
+            raise TypeError("bitstream must be a bytes object")
+        # length of bitstream must be divisible by 8
+        if len(self.bitstream) % 8 != 0:
+            raise ValueError("bitstream length must be a multiple of 8")
 
         # Validate types and sizes
         if not isinstance(self.state, int):
@@ -68,7 +77,6 @@ class EncodedSignal:
             np.uint32,
             np.uint16,
         ], "symbol_values must be int32, int16, uint32, or uint16"
-        assert self.bitstream.dtype == np.uint64, "bitstream must be uint64"
 
 
 def determine_symbol_counts_and_values(
@@ -204,7 +212,7 @@ def ans_encode(
 
     return EncodedSignal(
         state=encoded.state,
-        bitstream=encoded.bitstream,  # uint64 array from C++
+        bitstream=encoded.bitstream,
         num_bits=encoded.num_bits,
         symbol_counts=symbol_counts,  # Already numpy array from above
         symbol_values=symbol_values,  # Already numpy array from above

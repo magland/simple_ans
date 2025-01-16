@@ -43,14 +43,9 @@ jobs:
         run: |
           # Create a new orphan branch (no history)
           git checkout --orphan benchmark-new
-          # Remove everything
-          git rm -rf .
-          # Create benchmark_output directory
-          mkdir -p benchmark_output
-          # Copy benchmark results
-          cp benchmark_output/benchmark.json benchmark_output/
-          cp benchmark_output/benchmark.png benchmark_output/
-          # Add and commit the benchmark results
+          # Reset the working tree and clear the index
+          git reset --hard
+          # Only add and commit the benchmark files we want
           git add benchmark_output/benchmark.json benchmark_output/benchmark.png
           git commit -m "Update benchmark results"
 

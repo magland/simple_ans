@@ -35,20 +35,29 @@ jobs:
           python devel/benchmark.py
 
       - name: Configure Git
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
-          git config user.name "GitHub Actions"
+          git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
 
-      - name: Create and switch to benchmark branch
+      - name: Create fresh results branch
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
-          # Create a new orphan branch (no history)
-          git checkout --orphan benchmark-new
-          # Reset the working tree and clear the index
-          git reset --hard
-          # Only add and commit the benchmark files we want
-          git add benchmark_output/benchmark.json benchmark_output/benchmark.png
-          git commit -m "Update benchmark results"
+          git checkout --orphan benchmark-results
+          git rm -rf .
+          mkdir -p benchmark-results
 
-      - name: Force push to benchmark branch
+      - name: Move benchmark files
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
-          git push origin HEAD:benchmark --force
+          mv benchmark_output/benchmark.json benchmark-results/
+          mv benchmark_output/benchmark.png benchmark-results/
+
+      - name: Commit benchmark results
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add benchmark-results/
+          git commit -m "Update benchmark results from $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
+          git push -f https://${GITHUB_TOKEN}@github.com/${{ github.repository }} benchmark-results
